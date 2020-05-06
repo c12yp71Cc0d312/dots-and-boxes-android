@@ -59,15 +59,18 @@ public class GameScreen extends View {
         redStroke.setColor(Color.RED);
         redStroke.setStyle(Paint.Style.STROKE);
         redStroke.setStrokeWidth(10);
+        redStroke.setAntiAlias(true);
 
         blueStroke = new Paint();
         blueStroke.setColor(Color.BLUE);
         blueStroke.setStyle(Paint.Style.STROKE);
         blueStroke.setStrokeWidth(10);
+        blueStroke.setAntiAlias(true);
 
         redFill = new Paint();
         redFill.setColor(Color.RED);
         redFill.setStyle(Paint.Style.FILL);
+        redFill.setAntiAlias(true);
 
         blueFill = new Paint();
         blueFill.setColor(Color.BLUE);
@@ -190,10 +193,6 @@ public class GameScreen extends View {
                 canvas.drawText("Player 2 Wins!", (float)(canvasWidth/2 - canvasWidth/4.32), (float)(freeSpace - canvasHeight/8.132), scoreText);
             else
                 canvas.drawText("Draw", (float)(canvasWidth/2 - canvasWidth/10.8), (float)(freeSpace - canvasHeight/8.132), scoreText);
-            gameOver = false;
-            score1 = 0;
-            score2 = 0;
-            boxesCompleted = 0;
         }
 
     }
