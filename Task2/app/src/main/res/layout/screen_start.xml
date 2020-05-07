@@ -4,13 +4,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/black">
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Choose Mode:"
+        android:textColor="#ffffff"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -35,21 +37,27 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="4 X 4" />
+            android:text="4 X 4"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
 
         <RadioButton
             android:id="@+id/fivexfive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="5 X 5" />
+            android:text="5 X 5"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
 
         <RadioButton
             android:id="@+id/sixxsix"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="6 X 6" />
+            android:text="6 X 6"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
     </RadioGroup>
 
     <TextView
@@ -58,6 +66,7 @@
         android:layout_height="wrap_content"
         android:text="Choose no. of players:"
         android:textSize="25sp"
+        android:textColor="#fff"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -81,21 +90,27 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="2" />
+            android:text="2"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
 
         <RadioButton
             android:id="@+id/three"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="3" />
+            android:text="3"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
 
         <RadioButton
             android:id="@+id/four"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="4"/>
+            android:text="4"
+            android:textColor="#fff"
+            android:buttonTint="#fff"/>
 
     </RadioGroup>
 
