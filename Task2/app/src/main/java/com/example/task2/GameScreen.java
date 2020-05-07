@@ -30,7 +30,7 @@ public class GameScreen extends View {
     static double canvasHeight;
     static double canvasWidth;
     static float freeSpace;
-    boolean turn1 = false;
+    boolean turn1 = true;
     boolean turn2 = false;
     Path path1 = new Path();
     Path path2 = new Path();
@@ -42,13 +42,14 @@ public class GameScreen extends View {
     int score2;
     int boxesCompleted = 0;
     boolean gameOver = false;
+    boolean pointScored = false;
 
     public GameScreen(Context context) {
         super(context);
         setBackgroundResource(R.drawable.paperbg);
         mainActivity = new MainActivity();
         boxes = mainActivity.getMode();
-        Log.d(TAG, "Boxes: " + mainActivity.getMode());
+        //Log.d(TAG, "Boxes: " + mainActivity.getMode());
 
         blackFill = new Paint();
         blackFill.setColor(Color.BLACK);
@@ -112,33 +113,41 @@ public class GameScreen extends View {
 
                             if(x == boxDistance * (boxes + 1) && y != canvasHeight - boxDistance ) {
                                 if(xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
-                                    if(checkVerLineExists((int) dotX, (int) dotY)) {
+                                    if(!checkVerLineExists((int) dotX, (int) dotY)) {
                                         verticalLine(x, y);
                                         verticalLineMarker((int) dotX, (int) dotY);
+                                        if(!pointScored)
+                                            switchTurn();
                                     }
                                 }
                             }
 
                             else if(y == canvasHeight - boxDistance && x != boxDistance * (boxes + 1)) {
                                 if(yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
-                                    if(checkHorLineExists((int) dotX, (int) dotY)) {
+                                    if(!checkHorLineExists((int) dotX, (int) dotY)) {
                                         horizontalLine(x, y);
                                         horizontalLineMarker((int) dotX, (int) dotY);
+                                        if(!pointScored)
+                                            switchTurn();
                                     }
                                 }
                             }
 
                             else if(x != boxDistance * (boxes + 1) && y != canvasHeight - boxDistance){
                                 if(xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
-                                    if(checkVerLineExists((int) dotX, (int) dotY)) {
+                                    if(!checkVerLineExists((int) dotX, (int) dotY)) {
                                         verticalLine(x, y);
                                         verticalLineMarker((int) dotX, (int) dotY);
+                                        if(!pointScored)
+                                            switchTurn();
                                     }
                                 }
                                 else if(yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
-                                    if(checkHorLineExists((int) dotX, (int) dotY)) {
+                                    if(!checkHorLineExists((int) dotX, (int) dotY)) {
                                         horizontalLine(x, y);
                                         horizontalLineMarker((int) dotX, (int) dotY);
+                                        if(!pointScored)
+                                            switchTurn();
                                     }
                                 }
                             }
@@ -159,8 +168,8 @@ public class GameScreen extends View {
         super.onDraw(canvas);
         canvasWidth = canvas.getWidth();
         canvasHeight = canvas.getHeight();
-        Log.d(TAG, "onDraw: ch" + canvasHeight);
-        Log.d(TAG, "onDraw: cw" + canvasWidth);
+        //Log.d(TAG, "onDraw: ch" + canvasHeight);
+        //Log.d(TAG, "onDraw: cw" + canvasWidth);
         boxDistance = canvasWidth / (boxes + 2);
         freeSpace = (float)(canvasHeight - boxDistance*(boxes + 1));
 
@@ -181,9 +190,9 @@ public class GameScreen extends View {
         canvas.drawText("Player 1:  " + score1, (float)(canvasWidth / 21.6), freeSpace / 2, scoreText);
         canvas.drawText("Player 2:  " + score2, (float)(canvasWidth/2 + canvasWidth / 21.6), freeSpace / 2, scoreText);
 
-        if((!turn1 && !turn2) || !turn1)
+        if(turn1)
             canvas.drawText("(Your Turn)", (float)(canvasWidth / 15.42), (float)(freeSpace / 2 + canvasHeight / 22.6), turnText);
-        else if(!turn2)
+        else if(turn2)
             canvas.drawText("(Your Turn)", (float)(canvasWidth/2 + canvasWidth / 15.42), (float)(freeSpace / 2 + canvasHeight / 22.6), turnText);
 
         if(gameOver) {
@@ -203,22 +212,13 @@ public class GameScreen extends View {
         float endX = x;
         float endY = (float) (y + boxDistance);
 
-        if(!turn1 && !turn2) {
-            turn1 = true;
+        if(turn1) {
             path1.moveTo(startX, startY);
             path1.lineTo(endX, endY);
         }
-        else if(turn1) {
-            turn1 = false;
-            turn2 = true;
+        else if(turn2) {
             path2.moveTo(startX, startY);
             path2.lineTo(endX, endY);
-        }
-        else {
-            turn2 = false;
-            turn1 = true;
-            path1.moveTo(startX, startY);
-            path1.lineTo(endX, endY);
         }
     }
 
@@ -229,22 +229,13 @@ public class GameScreen extends View {
         float endX = (float) (x + boxDistance);
 
 
-        if(!turn1 && !turn2) {
-            turn1 = true;
+        if(turn1) {
             path1.moveTo(startX, startY);
             path1.lineTo(endX, endY);
         }
-        else if(turn1) {
-            turn1 = false;
-            turn2 = true;
+        else if(turn2) {
             path2.moveTo(startX, startY);
             path2.lineTo(endX, endY);
-        }
-        else {
-            turn2 = false;
-            turn1 = true;
-            path1.moveTo(startX, startY);
-            path1.lineTo(endX, endY);
         }
 
     }
@@ -252,24 +243,27 @@ public class GameScreen extends View {
     public void verticalLineMarker(int X, int Y) {
         int lineNumber = boxes*X + Y;
         verLinesCheck.put(lineNumber, true);
-        Log.d(TAG, "verticalLineMarker: " + lineNumber);
+        //Log.d(TAG, "verticalLineMarker: " + lineNumber);
         verLineBoxer(lineNumber, X, Y);
     }
 
     public void horizontalLineMarker(int X, int Y) {
         int lineNumber = X + boxes*Y;
         horLinesCheck.put(lineNumber, true);
-        Log.d(TAG, "horizontalLineMarker: " + lineNumber);
+        //Log.d(TAG, "horizontalLineMarker: " + lineNumber);
         horLineBoxer(lineNumber, X, Y);
     }
 
     public void horLineBoxer(int lineNo, int x, int y) {
+        pointScored = false;
         if(lineNo >= boxes) {
             int leftSide = boxes*x + y - 1;
             int rightSide = boxes*(x + 1) + y - 1;
             int top = x + boxes*(y - 1);
             if(verLinesCheck.get(leftSide) && verLinesCheck.get(rightSide) && horLinesCheck.get(top)) {
                 drawSquare(x, y-1);
+                pointScored = true;
+                Log.d(TAG, "horLineBoxer: point scored true");
             }
         }
         if(lineNo < boxes*boxes) {
@@ -278,17 +272,22 @@ public class GameScreen extends View {
             int bottom = x + boxes*(y + 1);
             if(verLinesCheck.get(leftSide) && verLinesCheck.get(rightSide) && horLinesCheck.get(bottom)) {
                 drawSquare(x, y);
+                pointScored = true;
+                Log.d(TAG, "horLineBoxer: point scored true");
             }
         }
     }
 
     public void verLineBoxer(int lineNo, int x, int y) {
+        pointScored = false;
         if(lineNo >= boxes) {
             int top = x + boxes*y - 1;
             int bottom = x + boxes*(y + 1) - 1;
             int leftSide = boxes*(x - 1) + y;
             if(horLinesCheck.get(top) && horLinesCheck.get(bottom) && verLinesCheck.get(leftSide)) {
                 drawSquare(x-1, y);
+                pointScored = true;
+                Log.d(TAG, "verLineBoxer: point scored true");
             }
         }
         if(lineNo < boxes*boxes) {
@@ -297,12 +296,14 @@ public class GameScreen extends View {
             int rightSide = boxes*(x + 1) + y;
             if(horLinesCheck.get(top) && horLinesCheck.get(bottom) && verLinesCheck.get(rightSide)) {
                 drawSquare(x, y);
+                pointScored = true;
+                Log.d(TAG, "verLineBoxer: point scored true");
             }
         }
     }
 
     public void drawSquare(int dotX, int dotY) {
-        Log.d(TAG, "drawSquare: reached");
+        //Log.d(TAG, "drawSquare: reached");
         boxesCompleted ++;
         float startX = (float) (boxDistance*(dotX + 1));
         float startY = (float) (canvasHeight - boxDistance*(boxes - dotY + 1));
@@ -312,10 +313,10 @@ public class GameScreen extends View {
             square1.lineTo((float)(startX + boxDistance - 20), (float)(startY + boxDistance - 20));
             square1.lineTo(startX + 20, (float)(startY + boxDistance) - 20);
             square1.lineTo(startX + 20, startY + 20);
-            Log.d(TAG, "drawSquare: drawn1");
+            //Log.d(TAG, "drawSquare: drawn1");
             score1 ++;
-            turn2 = true;
-            turn1 = false;
+            //turn2 = true;
+            //turn1 = false;
         }
         else if(turn2) {
             square2.moveTo(startX + 20, startY + 20);
@@ -323,10 +324,10 @@ public class GameScreen extends View {
             square2.lineTo((float)(startX + boxDistance - 20), (float)(startY + boxDistance - 20));
             square2.lineTo(startX + 20, (float)(startY + boxDistance) - 20);
             square2.lineTo(startX + 20, startY + 20);
-            Log.d(TAG, "drawSquare: drawn2");
+            //Log.d(TAG, "drawSquare: drawn2");
             score2 ++;
-            turn1 = true;
-            turn2 = false;
+            //turn1 = true;
+            //turn2 = false;
         }
 
         if(boxesCompleted == boxes*boxes)
@@ -336,17 +337,30 @@ public class GameScreen extends View {
     public boolean checkVerLineExists(int X, int Y) {
         int lineNo = boxes*X + Y;
         if(!verLinesCheck.get(lineNo)) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public boolean checkHorLineExists(int X, int Y) {
         int lineNo = X + boxes*Y;
         if(!horLinesCheck.get(lineNo)) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
+    }
+
+    public void switchTurn() {
+        if(turn1) {
+            turn1 = false;
+            turn2 = true;
+            Log.d(TAG, "switchTurn: 1 to 2");
+        }
+        else if(turn2) {
+            turn1 = true;
+            turn2 = false;
+            Log.d(TAG, "switchTurn: 2 to 1");
+        }
     }
 
 }
