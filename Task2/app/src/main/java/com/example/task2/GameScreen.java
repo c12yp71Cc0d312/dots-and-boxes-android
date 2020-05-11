@@ -1,14 +1,23 @@
 package com.example.task2;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Build;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -53,13 +62,16 @@ public class GameScreen extends View {
     int boxesCompleted = 0;
     boolean gameOver = false;
     boolean pointScored = false;
+    ArrayList<Path> pathHistory;
+    Bitmap undo;
 
-    public GameScreen(Context context) {
+    public GameScreen(Context context, MainActivity mainActivity) {
         super(context);
         setBackgroundResource(R.drawable.paperbg);
-        mainActivity = new MainActivity();
+        this.mainActivity = mainActivity;
         boxes = mainActivity.getMode();
         players = mainActivity.getPlayers();
+        pathHistory = new ArrayList<>();
 
         blackFill = new Paint();
         blackFill.setColor(Color.BLACK);
@@ -116,12 +128,12 @@ public class GameScreen extends View {
 
         scoreText = new Paint();
         scoreText.setColor(Color.BLACK);
-       // scoreText.setTextSize(80);
+        // scoreText.setTextSize(80);
         scoreText.setAntiAlias(true);
 
         turnText = new Paint();
         turnText.setColor(Color.BLACK);
-       // turnText.setTextSize(40);
+        // turnText.setTextSize(40);
         turnText.setAntiAlias(true);
 
         horLinesCheck = new LinkedHashMap<>();
@@ -137,7 +149,9 @@ public class GameScreen extends View {
         score3 = 0;
         score4 = 0;
 
+        undo = BitmapFactory.decodeResource(getResources(),R.drawable.undo1);
     }
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -192,6 +206,10 @@ public class GameScreen extends View {
 
                         }
                     }
+
+                    if(xPos >= canvasWidth - 120 && yPos <= 71) {
+                        pathHistory.remove(pathHistory.size()-1);
+                    }
                     postInvalidate();
                     return true;
 
@@ -206,11 +224,10 @@ public class GameScreen extends View {
         super.onDraw(canvas);
         canvasWidth = canvas.getWidth();
         canvasHeight = canvas.getHeight();
-        //Log.d(TAG, "onDraw: ch" + canvasHeight);
-        //Log.d(TAG, "onDraw: cw" + canvasWidth);
         boxDistance = canvasWidth / (boxes + 2);
         freeSpace = (float)(canvasHeight - boxDistance*(boxes + 1));
 
+        canvas.drawBitmap(undo, (float)(canvasWidth-150), 20, null);
         drawLinesAndBoxes(canvas);
         drawDots(canvas);
         drawScores(canvas);
@@ -226,18 +243,22 @@ public class GameScreen extends View {
         if(turn1) {
             path1.moveTo(startX, startY);
             path1.lineTo(endX, endY);
+            pathHistory.add(path1);
         }
         else if(turn2) {
             path2.moveTo(startX, startY);
             path2.lineTo(endX, endY);
+            pathHistory.add(path2);
         }
         else if(turn3) {
             path3.moveTo(startX, startY);
             path3.lineTo(endX, endY);
+            pathHistory.add(path3);
         }
         else if(turn4) {
             path4.moveTo(startX, startY);
             path4.lineTo(endX, endY);
+            pathHistory.add(path4);
         }
     }
 
@@ -251,18 +272,22 @@ public class GameScreen extends View {
         if(turn1) {
             path1.moveTo(startX, startY);
             path1.lineTo(endX, endY);
+            pathHistory.add(path1);
         }
         else if(turn2) {
             path2.moveTo(startX, startY);
             path2.lineTo(endX, endY);
+            pathHistory.add(path2);
         }
         else if(turn3) {
             path3.moveTo(startX, startY);
             path3.lineTo(endX, endY);
+            pathHistory.add(path3);
         }
         else if(turn4) {
             path4.moveTo(startX, startY);
             path4.lineTo(endX, endY);
+            pathHistory.add(path4);
         }
 
     }
@@ -344,6 +369,7 @@ public class GameScreen extends View {
             score1 ++;
             //turn2 = true;
             //turn1 = false;
+            pathHistory.add(square1);
         }
         else if(turn2) {
             square2.moveTo(startX, startY);
@@ -355,6 +381,7 @@ public class GameScreen extends View {
             score2 ++;
             //turn1 = true;
             //turn2 = false;
+            pathHistory.add(square2);
         }
         else if(turn3) {
             square3.moveTo(startX, startY);
@@ -364,6 +391,7 @@ public class GameScreen extends View {
             square3.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn2");
             score3 ++;
+            pathHistory.add(square3);
         }
         else if(turn4) {
             square4.moveTo(startX, startY);
@@ -373,6 +401,7 @@ public class GameScreen extends View {
             square4.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn2");
             score4 ++;
+            pathHistory.add(square4);
         }
 
         if(boxesCompleted == boxes*boxes)
@@ -518,4 +547,5 @@ public class GameScreen extends View {
                 canvas.drawText("Draw", (float)(canvasWidth/2 - canvasWidth/10.8), (float)(freeSpace - canvasHeight/y5div), scoreText);
         }
     }
+
 }
