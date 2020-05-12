@@ -16,6 +16,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -44,10 +45,7 @@ public class GameScreen extends View {
     static double canvasHeight;
     static double canvasWidth;
     static float freeSpace;
-    boolean turn1 = true;
-    boolean turn2 = false;
-    boolean turn3 = false;
-    boolean turn4 = false;
+    int turn = 1;
     Path path1 = new Path();
     Path path2 = new Path();
     Path path3 = new Path();
@@ -56,14 +54,19 @@ public class GameScreen extends View {
     Path square2 = new Path();
     Path square3 = new Path();
     Path square4 = new Path();
-    Map<Integer, Boolean> horLinesCheck;
-    Map<Integer, Boolean> verLinesCheck;
+    Map<Integer, Boolean> horLinesChecker;
+    Map<Integer, Boolean> verLinesChecker;
     int score1, score2, score3, score4;
     int boxesCompleted = 0;
     boolean gameOver = false;
     boolean pointScored = false;
-    ArrayList<Path> pathHistory;
+    ArrayList<Path> path1History, path2History, path3History, path4History;
+    ArrayList<Path> square1History, square2History, square3History, square4History;
+    ArrayList<Boolean> lineDirHistory;
+    ArrayList<Integer> horLineHistory, verLineHistory;
+    ArrayList<Integer> turnHistory;
     Bitmap undo;
+    ArrayList<Integer> boxHistory;
 
     public GameScreen(Context context, MainActivity mainActivity) {
         super(context);
@@ -71,7 +74,14 @@ public class GameScreen extends View {
         this.mainActivity = mainActivity;
         boxes = mainActivity.getMode();
         players = mainActivity.getPlayers();
-        pathHistory = new ArrayList<>();
+        path1History = new ArrayList<>();
+        path2History = new ArrayList<>();
+        path3History = new ArrayList<>();
+        path4History = new ArrayList<>();
+        square1History = new ArrayList<>();
+        square2History = new ArrayList<>();
+        square3History = new ArrayList<>();
+        square4History = new ArrayList<>();
 
         blackFill = new Paint();
         blackFill.setColor(Color.BLACK);
@@ -136,18 +146,24 @@ public class GameScreen extends View {
         // turnText.setTextSize(40);
         turnText.setAntiAlias(true);
 
-        horLinesCheck = new LinkedHashMap<>();
-        verLinesCheck = new LinkedHashMap<>();
+        horLinesChecker = new LinkedHashMap<>();
+        verLinesChecker = new LinkedHashMap<>();
 
         for(int t = 0; t <= boxes*(boxes+1) - 1; t++) {
-            horLinesCheck.put(t, false);
-            verLinesCheck.put(t, false);
+            horLinesChecker.put(t, false);
+            verLinesChecker.put(t, false);
         }
 
         score1 = 0;
         score2 = 0;
         score3 = 0;
         score4 = 0;
+
+        lineDirHistory = new ArrayList<>();
+        horLineHistory = new ArrayList<>();
+        verLineHistory = new ArrayList<>();
+        turnHistory = new ArrayList<>();
+        boxHistory = new ArrayList<>();
 
         undo = BitmapFactory.decodeResource(getResources(),R.drawable.undo1);
     }
@@ -160,59 +176,17 @@ public class GameScreen extends View {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN :
-                for(float x = (int) (boxDistance), dotX = 0; x <= boxDistance * (boxes + 1); x += boxDistance, dotX++) {
-                    for(float y = (int) (canvasHeight - boxDistance * (boxes + 1)), dotY = 0; y <= canvasHeight - boxDistance; y += boxDistance, dotY++) {
 
-                            if(x == boxDistance * (boxes + 1) && y != canvasHeight - boxDistance ) {
-                                if(xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
-                                    if(!checkVerLineExists((int) dotX, (int) dotY)) {
-                                        verticalLine(x, y);
-                                        verticalLineMarker((int) dotX, (int) dotY);
-                                        if(!pointScored)
-                                            switchTurn();
-                                    }
-                                }
-                            }
-
-                            else if(y == canvasHeight - boxDistance && x != boxDistance * (boxes + 1)) {
-                                if(yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
-                                    if(!checkHorLineExists((int) dotX, (int) dotY)) {
-                                        horizontalLine(x, y);
-                                        horizontalLineMarker((int) dotX, (int) dotY);
-                                        if(!pointScored)
-                                            switchTurn();
-                                    }
-                                }
-                            }
-
-                            else if(x != boxDistance * (boxes + 1) && y != canvasHeight - boxDistance){
-                                if(xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
-                                    if(!checkVerLineExists((int) dotX, (int) dotY)) {
-                                        verticalLine(x, y);
-                                        verticalLineMarker((int) dotX, (int) dotY);
-                                        if(!pointScored)
-                                            switchTurn();
-                                    }
-                                }
-                                else if(yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
-                                    if(!checkHorLineExists((int) dotX, (int) dotY)) {
-                                        horizontalLine(x, y);
-                                        horizontalLineMarker((int) dotX, (int) dotY);
-                                        if(!pointScored)
-                                            switchTurn();
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-
-                    if(xPos >= canvasWidth - 120 && yPos <= 71) {
-                        pathHistory.remove(pathHistory.size()-1);
-                    }
+                if(xPos >= canvasWidth - 150 && yPos <= 150) {
+                    undo();
                     postInvalidate();
                     return true;
+                }
 
+                else {
+                    checkTouchInsideGrid(xPos, yPos);       //postInvalidate in function
+                    return true;
+                }
             default:
                 return false;
         }
@@ -232,126 +206,131 @@ public class GameScreen extends View {
         drawDots(canvas);
         drawScores(canvas);
 
+        Log.d(TAG, "onDraw: dirhis" + lineDirHistory);
+        Log.d(TAG, "onDraw: verhis" + verLineHistory);
+        Log.d(TAG, "onDraw: horhis" + horLineHistory);
+
     }
 
-    public void verticalLine(float x, float y) {
-        float startX = x;
-        float startY = y;
-        float endX = x;
-        float endY = (float) (y + boxDistance);
+    public void drawLine(float x, float y, boolean v) {
+        float startX, startY, endX, endY;
 
-        if(turn1) {
+        if(v) {                                 //vertical
+            startX = x;
+            startY = y;
+            endX = x;
+            endY = (float) (y + boxDistance);
+        }
+        else {                                  //horizontal
+            startY = y;
+            endY = y;
+            startX = x;
+            endX = (float) (x + boxDistance);
+        }
+
+        if(turn == 1) {
+            path1 = new Path();
             path1.moveTo(startX, startY);
             path1.lineTo(endX, endY);
-            pathHistory.add(path1);
+            path1History.add(path1);
+            turnHistory.add(1);
         }
-        else if(turn2) {
+        else if(turn == 2) {
+            path2 = new Path();
             path2.moveTo(startX, startY);
             path2.lineTo(endX, endY);
-            pathHistory.add(path2);
+            path2History.add(path2);
+            turnHistory.add(2);
         }
-        else if(turn3) {
+        else if(turn == 3) {
+            path3 = new Path();
             path3.moveTo(startX, startY);
             path3.lineTo(endX, endY);
-            pathHistory.add(path3);
+            path3History.add(path3);
+            turnHistory.add(3);
         }
-        else if(turn4) {
+        else if(turn == 4) {
+            path4 = new Path();
             path4.moveTo(startX, startY);
             path4.lineTo(endX, endY);
-            pathHistory.add(path4);
+            path4History.add(path4);
+            turnHistory.add(4);
         }
     }
 
-    public void horizontalLine(float x, float y) {
-        float startY = y;
-        float endY = y;
-        float startX = x;
-        float endX = (float) (x + boxDistance);
-
-
-        if(turn1) {
-            path1.moveTo(startX, startY);
-            path1.lineTo(endX, endY);
-            pathHistory.add(path1);
-        }
-        else if(turn2) {
-            path2.moveTo(startX, startY);
-            path2.lineTo(endX, endY);
-            pathHistory.add(path2);
-        }
-        else if(turn3) {
-            path3.moveTo(startX, startY);
-            path3.lineTo(endX, endY);
-            pathHistory.add(path3);
-        }
-        else if(turn4) {
-            path4.moveTo(startX, startY);
-            path4.lineTo(endX, endY);
-            pathHistory.add(path4);
-        }
-
-    }
 
     public void verticalLineMarker(int X, int Y) {
         int lineNumber = boxes*X + Y;
-        verLinesCheck.put(lineNumber, true);
+        verLinesChecker.put(lineNumber, true);
+        verLineHistory.add(lineNumber);
+        lineDirHistory.add(true);
         //Log.d(TAG, "verticalLineMarker: " + lineNumber);
         verLineBoxer(lineNumber, X, Y);
     }
 
     public void horizontalLineMarker(int X, int Y) {
         int lineNumber = X + boxes*Y;
-        horLinesCheck.put(lineNumber, true);
+        horLinesChecker.put(lineNumber, true);
+        horLineHistory.add(lineNumber);
+        lineDirHistory.add(false);
         //Log.d(TAG, "horizontalLineMarker: " + lineNumber);
         horLineBoxer(lineNumber, X, Y);
     }
 
     public void horLineBoxer(int lineNo, int x, int y) {
         pointScored = false;
+        int numOfBoxesScored = 0;
         if(lineNo >= boxes) {
             int leftSide = boxes*x + y - 1;
             int rightSide = boxes*(x + 1) + y - 1;
             int top = x + boxes*(y - 1);
-            if(verLinesCheck.get(leftSide) && verLinesCheck.get(rightSide) && horLinesCheck.get(top)) {
+            if(verLinesChecker.get(leftSide) && verLinesChecker.get(rightSide) && horLinesChecker.get(top)) {
                 drawSquare(x, y-1);
                 pointScored = true;
                 Log.d(TAG, "horLineBoxer: point scored true");
+                numOfBoxesScored++;
             }
         }
         if(lineNo < boxes*boxes) {
             int leftSide = boxes*x + y;
             int rightSide = boxes*(x + 1) + y;
             int bottom = x + boxes*(y + 1);
-            if(verLinesCheck.get(leftSide) && verLinesCheck.get(rightSide) && horLinesCheck.get(bottom)) {
+            if(verLinesChecker.get(leftSide) && verLinesChecker.get(rightSide) && horLinesChecker.get(bottom)) {
                 drawSquare(x, y);
                 pointScored = true;
                 Log.d(TAG, "horLineBoxer: point scored true");
+                numOfBoxesScored++;
             }
         }
+        boxHistory.add(numOfBoxesScored);
     }
 
     public void verLineBoxer(int lineNo, int x, int y) {
         pointScored = false;
+        int numOfBoxesScored = 0;
         if(lineNo >= boxes) {
             int top = x + boxes*y - 1;
             int bottom = x + boxes*(y + 1) - 1;
             int leftSide = boxes*(x - 1) + y;
-            if(horLinesCheck.get(top) && horLinesCheck.get(bottom) && verLinesCheck.get(leftSide)) {
+            if(horLinesChecker.get(top) && horLinesChecker.get(bottom) && verLinesChecker.get(leftSide)) {
                 drawSquare(x-1, y);
                 pointScored = true;
                 Log.d(TAG, "verLineBoxer: point scored true");
+                numOfBoxesScored++;
             }
         }
         if(lineNo < boxes*boxes) {
             int top = x + boxes*y;
             int bottom = x + boxes*(y + 1);
             int rightSide = boxes*(x + 1) + y;
-            if(horLinesCheck.get(top) && horLinesCheck.get(bottom) && verLinesCheck.get(rightSide)) {
+            if(horLinesChecker.get(top) && horLinesChecker.get(bottom) && verLinesChecker.get(rightSide)) {
                 drawSquare(x, y);
                 pointScored = true;
                 Log.d(TAG, "verLineBoxer: point scored true");
+                numOfBoxesScored++;
             }
         }
+        boxHistory.add(numOfBoxesScored);
     }
 
     public void drawSquare(int dotX, int dotY) {
@@ -359,7 +338,8 @@ public class GameScreen extends View {
         boxesCompleted ++;
         float startX = (float) (boxDistance*(dotX + 1));
         float startY = (float) (canvasHeight - boxDistance*(boxes - dotY + 1));
-        if(turn1) {
+        if(turn == 1) {
+            square1 = new Path();
             square1.moveTo(startX, startY);
             square1.lineTo((float)(startX + boxDistance), startY);
             square1.lineTo((float)(startX + boxDistance), (float)(startY + boxDistance));
@@ -367,11 +347,13 @@ public class GameScreen extends View {
             square1.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn1");
             score1 ++;
-            //turn2 = true;
-            //turn1 = false;
-            pathHistory.add(square1);
+            square1History.add(square1);
+            //turn == 2 = true;
+            //turn == 1 = false;
+            //pathHistory.add(square1);
         }
-        else if(turn2) {
+        else if(turn == 2) {
+            square2 = new Path();
             square2.moveTo(startX, startY);
             square2.lineTo((float)(startX + boxDistance), startY);
             square2.lineTo((float)(startX + boxDistance), (float)(startY + boxDistance));
@@ -379,11 +361,13 @@ public class GameScreen extends View {
             square2.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn2");
             score2 ++;
-            //turn1 = true;
-            //turn2 = false;
-            pathHistory.add(square2);
+            square2History.add(square2);
+            //turn == 1 = true;
+            //turn == 2 = false;
+            //pathHistory.add(square2);
         }
-        else if(turn3) {
+        else if(turn == 3) {
+            square3 = new Path();
             square3.moveTo(startX, startY);
             square3.lineTo((float)(startX + boxDistance), startY);
             square3.lineTo((float)(startX + boxDistance), (float)(startY + boxDistance));
@@ -391,9 +375,11 @@ public class GameScreen extends View {
             square3.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn2");
             score3 ++;
-            pathHistory.add(square3);
+            square3History.add(square3);
+            //pathHistory.add(square3);
         }
-        else if(turn4) {
+        else if(turn == 4) {
+            square4 = new Path();
             square4.moveTo(startX, startY);
             square4.lineTo((float)(startX + boxDistance), startY);
             square4.lineTo((float)(startX + boxDistance), (float)(startY + boxDistance));
@@ -401,7 +387,8 @@ public class GameScreen extends View {
             square4.lineTo(startX, startY);
             //Log.d(TAG, "drawSquare: drawn2");
             score4 ++;
-            pathHistory.add(square4);
+            square4History.add(square4);
+            //pathHistory.add(square4);
         }
 
         if(boxesCompleted == boxes*boxes)
@@ -410,7 +397,7 @@ public class GameScreen extends View {
 
     public boolean checkVerLineExists(int X, int Y) {
         int lineNo = boxes*X + Y;
-        if(!verLinesCheck.get(lineNo)) {
+        if(!verLinesChecker.get(lineNo)) {
             return false;
         }
         return true;
@@ -418,7 +405,7 @@ public class GameScreen extends View {
 
     public boolean checkHorLineExists(int X, int Y) {
         int lineNo = X + boxes*Y;
-        if(!horLinesCheck.get(lineNo)) {
+        if(!horLinesChecker.get(lineNo)) {
             return false;
         }
         return true;
@@ -427,45 +414,36 @@ public class GameScreen extends View {
     public void switchTurn() {
 
         if(players == 2) {
-            if(turn1) {
-                turn1 = false;
-                turn2 = true;
+            if(turn == 1) {
+                turn = 2;
             }
-            else if(turn2) {
-                turn1 = true;
-                turn2 = false;
+            else if(turn == 2) {
+                turn = 1;
             }
         }
         else if(players == 3) {
-            if(turn1) {
-                turn1 = false;
-                turn2 = true;
+            if(turn == 1) {
+                turn = 2;
             }
-            else if(turn2) {
-                turn2 = false;
-                turn3 = true;
+            else if(turn == 2) {
+                turn = 3;
             }
-            else if(turn3) {
-                turn1 = true;
-                turn3 = false;
+            else if(turn == 3) {
+                turn = 1;
             }
         }
         else if (players ==  4) {
-            if(turn1) {
-                turn1 = false;
-                turn2 = true;
+            if(turn == 1) {
+                turn = 2;
             }
-            else if(turn2) {
-                turn2 = false;
-                turn3 = true;
+            else if(turn == 2) {
+                turn = 3;
             }
-            else if(turn3) {
-                turn3 = false;
-                turn4 = true;
+            else if(turn == 3) {
+                turn = 4;
             }
-            else if(turn4) {
-                turn1 = true;
-                turn4 = false;
+            else if(turn == 4) {
+                turn = 1;
             }
         }
 
@@ -480,14 +458,22 @@ public class GameScreen extends View {
     }
 
     public void drawLinesAndBoxes (Canvas canvas) {
-        canvas.drawPath(square1, redFill);
-        canvas.drawPath(square2, blueFill);
-        canvas.drawPath(square3, dkGrayFill);
-        canvas.drawPath(square4, magentaFill);
-        canvas.drawPath(path1, redStroke);
-        canvas.drawPath(path2, blueStroke);
-        canvas.drawPath(path3, dkGrayStroke);
-        canvas.drawPath(path4, magentaStroke);
+        for(Path s1 : square1History)
+            canvas.drawPath(s1, redFill);
+        for(Path s2 : square2History)
+            canvas.drawPath(s2, blueFill);
+        for(Path s3 : square3History)
+            canvas.drawPath(s3, dkGrayFill);
+        for(Path s4 : square4History)
+            canvas.drawPath(s4, magentaFill);
+        for(Path p1 : path1History)
+            canvas.drawPath(p1, redStroke);
+        for(Path p2 : path2History)
+            canvas.drawPath(p2, blueStroke);
+        for(Path p3 : path3History)
+            canvas.drawPath(p3, dkGrayStroke);
+        for(Path p4 : path4History)
+            canvas.drawPath(p4, magentaStroke);
     }
 
     public void drawScores (Canvas canvas) {
@@ -520,13 +506,13 @@ public class GameScreen extends View {
             canvas.drawText("Player 4:  " + score4, (float) (canvasWidth / 2 + canvasWidth / 21.6), (freeSpace*2) / y4div, scoreText);
         }
 
-        if (turn1)
+        if (turn == 1)
             canvas.drawText("(Your Turn)", (float) (canvasWidth / 15.42), (float) (freeSpace / y1div + canvasHeight / 22.6), turnText);
-        else if (turn2)
+        else if (turn == 2)
             canvas.drawText("(Your Turn)", (float) (canvasWidth / 2 + canvasWidth / 15.42), (float) (freeSpace / y2div + canvasHeight / 22.6), turnText);
-        else if (turn3)
+        else if (turn == 3)
             canvas.drawText("(Your Turn)", (float) (canvasWidth / 15.42), (float) ((freeSpace*2) / y3div + canvasHeight / 22.6), turnText);
-        else if(turn4)
+        else if(turn == 4)
             canvas.drawText("(Your Turn)", (float) (canvasWidth / 2 + canvasWidth / 15.42), (float) ((freeSpace*2) / y4div + canvasHeight / 22.6), turnText);
 
 
@@ -545,6 +531,118 @@ public class GameScreen extends View {
                 canvas.drawText("Player " + winner + " Wins!", (float)(canvasWidth/2 - canvasWidth/4.32), (float)(freeSpace - canvasHeight/y5div), scoreText);
             else
                 canvas.drawText("Draw", (float)(canvasWidth/2 - canvasWidth/10.8), (float)(freeSpace - canvasHeight/y5div), scoreText);
+        }
+    }
+
+    public void undo() {
+        Log.d(TAG, "undo: called");
+        int moves = lineDirHistory.size();
+        if(moves == 0) {
+            Toast.makeText(getContext(), "No moves made", Toast.LENGTH_SHORT).show();
+        }
+
+        else {
+            int lastTurn = turnHistory.get(turnHistory.size() - 1);
+            int lastTurnScore = boxHistory.get(boxHistory.size() - 1);
+            if(lastTurn == 1) {
+                path1History.remove(path1History.size() - 1);
+                for(int i = 1; i <= lastTurnScore; i++) {
+                    square1History.remove(square1History.size() - 1);
+                    score1--;
+                }
+            }
+            else if(lastTurn == 2) {
+                path2History.remove(path2History.size() - 1);
+                for(int i = 1; i <= lastTurnScore; i++) {
+                    square2History.remove(square2History.size() - 1);
+                    score2--;
+                }
+            }
+            else if(lastTurn == 3) {
+                path3History.remove(path3History.size() - 1);
+                for(int i = 1; i <= lastTurnScore; i++) {
+                    square3History.remove(square3History.size() - 1);
+                    score3--;
+                }
+            }
+            else if(lastTurn == 4) {
+                path4History.remove(path4History.size() - 1);
+                for(int i = 1; i <= lastTurnScore; i++) {
+                    square4History.remove(square4History.size() - 1);
+                    score4--;
+                }
+            }
+            for(int i = 1; i < players; i++) {
+                switchTurn();
+            }
+            turn = turnHistory.get(turnHistory.size() - 1);
+            turnHistory.remove(turnHistory.size()-1);
+            boxHistory.remove(boxHistory.size() - 1);
+        }
+
+
+        if(moves > 0) {
+            if (lineDirHistory.get(lineDirHistory.size() - 1)) {
+                verLinesChecker.put(verLineHistory.get(verLineHistory.size() - 1), false);
+                lineDirHistory.remove(lineDirHistory.size() - 1);
+                verLineHistory.remove(verLineHistory.size() - 1);
+                Log.d(TAG, "undo: ver");
+            }
+            else if (!lineDirHistory.get(lineDirHistory.size() - 1)) {
+                horLinesChecker.put(horLineHistory.get(horLineHistory.size() - 1), false);
+                lineDirHistory.remove(lineDirHistory.size() - 1);
+                horLineHistory.remove(horLineHistory.size() - 1);
+                Log.d(TAG, "undo: hor");
+            }
+        }
+        
+    }
+
+    public void checkTouchInsideGrid(float xPos, float yPos){
+        for (float x = (int) (boxDistance), dotX = 0; x <= boxDistance * (boxes + 1); x += boxDistance, dotX++) {
+            for (float y = (int) (canvasHeight - boxDistance * (boxes + 1)), dotY = 0; y <= canvasHeight - boxDistance; y += boxDistance, dotY++) {
+
+                if (x == boxDistance * (boxes + 1) && y != canvasHeight - boxDistance) {
+                    if (xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
+                        if (!checkVerLineExists((int) dotX, (int) dotY)) {
+                            drawLine(x, y, true);
+                            verticalLineMarker((int) dotX, (int) dotY);
+                            if (!pointScored)
+                                switchTurn();
+                            postInvalidate();
+                        }
+                    }
+                } else if (y == canvasHeight - boxDistance && x != boxDistance * (boxes + 1)) {
+                    if (yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
+                        if (!checkHorLineExists((int) dotX, (int) dotY)) {
+                            drawLine(x, y, false);
+                            horizontalLineMarker((int) dotX, (int) dotY);
+                            if (!pointScored)
+                                switchTurn();
+                            postInvalidate();
+                        }
+                    }
+                } else if (x != boxDistance * (boxes + 1) && y != canvasHeight - boxDistance) {
+                    if (xPos <= (x + 30) && xPos >= (x - 30) && yPos > (y + 20) && yPos < (y + boxDistance - 20)) {
+                        if (!checkVerLineExists((int) dotX, (int) dotY)) {
+                            drawLine(x, y, true);
+                            verticalLineMarker((int) dotX, (int) dotY);
+                            if (!pointScored)
+                                switchTurn();
+                            postInvalidate();
+                        }
+                    } else if (yPos <= (y + 30) && yPos >= (y - 30) && xPos > (x + 20) && xPos < (x + boxDistance - 20)) {
+                        if (!checkHorLineExists((int) dotX, (int) dotY)) {
+                            drawLine(x, y, false);
+                            horizontalLineMarker((int) dotX, (int) dotY);
+                            if (!pointScored)
+                                switchTurn();
+                            postInvalidate();
+                        }
+                    }
+                }
+
+            }
         }
     }
 
