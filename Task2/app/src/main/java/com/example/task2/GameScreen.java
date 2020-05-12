@@ -537,6 +537,10 @@ public class GameScreen extends View {
     public void undo() {
         Log.d(TAG, "undo: called");
         int moves = lineDirHistory.size();
+
+        if(gameOver)
+            gameOver = false;
+
         if(moves == 0) {
             Toast.makeText(getContext(), "No moves made", Toast.LENGTH_SHORT).show();
         }
@@ -549,6 +553,7 @@ public class GameScreen extends View {
                 for(int i = 1; i <= lastTurnScore; i++) {
                     square1History.remove(square1History.size() - 1);
                     score1--;
+                    boxesCompleted--;
                 }
             }
             else if(lastTurn == 2) {
@@ -556,6 +561,7 @@ public class GameScreen extends View {
                 for(int i = 1; i <= lastTurnScore; i++) {
                     square2History.remove(square2History.size() - 1);
                     score2--;
+                    boxesCompleted--;
                 }
             }
             else if(lastTurn == 3) {
@@ -563,6 +569,7 @@ public class GameScreen extends View {
                 for(int i = 1; i <= lastTurnScore; i++) {
                     square3History.remove(square3History.size() - 1);
                     score3--;
+                    boxesCompleted--;
                 }
             }
             else if(lastTurn == 4) {
@@ -570,6 +577,7 @@ public class GameScreen extends View {
                 for(int i = 1; i <= lastTurnScore; i++) {
                     square4History.remove(square4History.size() - 1);
                     score4--;
+                    boxesCompleted--;
                 }
             }
             for(int i = 1; i < players; i++) {
